@@ -7,7 +7,7 @@ import (
 )
 
 // #cgo CFLAGS: -Wall
-// #cgo LDFLAGS: libudt.a -lstdc++
+// #cgo LDFLAGS: ../libudt.a -lstdc++
 //
 // #include "udt_c.h"
 // #include <errno.h>

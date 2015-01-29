@@ -13,7 +13,7 @@ import (
 )
 
 // #cgo CFLAGS: -Wall
-// #cgo LDFLAGS: libudt.a -lstdc++ -lm
+// #cgo LDFLAGS: ../libudt.a -lstdc++ -lm
 //
 // #include "udt_c.h"
 // #include <errno.h>
