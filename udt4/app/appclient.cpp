@@ -47,27 +47,27 @@ int main(int argc, char* argv[])
       return 0;
    }
 
-   UDTSOCKET client = UDT::socket(local->ai_family, local->ai_socktype, local->ai_protocol);
+   UDTSOCKET client = UDT::udt_socket(local->ai_family, local->ai_socktype, local->ai_protocol);
 
    // UDT Options
-   //UDT::setsockopt(client, 0, UDT_CC, new CCCFactory<CUDPBlast>, sizeof(CCCFactory<CUDPBlast>));
-   //UDT::setsockopt(client, 0, UDT_MSS, new int(9000), sizeof(int));
-   //UDT::setsockopt(client, 0, UDT_SNDBUF, new int(10000000), sizeof(int));
-   //UDT::setsockopt(client, 0, UDP_SNDBUF, new int(10000000), sizeof(int));
-   //UDT::setsockopt(client, 0, UDT_MAXBW, new int64_t(12500000), sizeof(int));
+   //UDT::udt_setsockopt(client, 0, UDT_CC, new CCCFactory<CUDPBlast>, sizeof(CCCFactory<CUDPBlast>));
+   //UDT::udt_setsockopt(client, 0, UDT_MSS, new int(9000), sizeof(int));
+   //UDT::udt_setsockopt(client, 0, UDT_SNDBUF, new int(10000000), sizeof(int));
+   //UDT::udt_setsockopt(client, 0, UDP_SNDBUF, new int(10000000), sizeof(int));
+   //UDT::udt_setsockopt(client, 0, UDT_MAXBW, new int64_t(12500000), sizeof(int));
 
    // Windows UDP issue
    // For better performance, modify HKLM\System\CurrentControlSet\Services\Afd\Parameters\FastSendDatagramThreshold
    #ifdef WIN32
-      UDT::setsockopt(client, 0, UDT_MSS, new int(1052), sizeof(int));
+      UDT::udt_setsockopt(client, 0, UDT_MSS, new int(1052), sizeof(int));
    #endif
 
    // for rendezvous connection, enable the code below
    /*
-   UDT::setsockopt(client, 0, UDT_RENDEZVOUS, new bool(true), sizeof(bool));
-   if (UDT::ERROR == UDT::bind(client, local->ai_addr, local->ai_addrlen))
+   UDT::udt_setsockopt(client, 0, UDT_RENDEZVOUS, new bool(true), sizeof(bool));
+   if (UDT::ERROR == UDT::udt_bind(client, local->ai_addr, local->ai_addrlen))
    {
-      cout << "bind: " << UDT::getlasterror().getErrorMessage() << endl;
+      cout << "bind: " << UDT::udt_getlasterror().getErrorMessage() << endl;
       return 0;
    }
    */
@@ -81,9 +81,9 @@ int main(int argc, char* argv[])
    }
 
    // connect to the server, implict bind
-   if (UDT::ERROR == UDT::connect(client, peer->ai_addr, peer->ai_addrlen))
+   if (UDT::ERROR == UDT::udt_connect(client, peer->ai_addr, peer->ai_addrlen))
    {
-      cout << "connect: " << UDT::getlasterror().getErrorMessage() << endl;
+      cout << "connect: " << UDT::udt_getlasterror().getErrorMessage() << endl;
       return 0;
    }
 
@@ -92,7 +92,7 @@ int main(int argc, char* argv[])
    // using CC method
    //CUDPBlast* cchandle = NULL;
    //int temp;
-   //UDT::getsockopt(client, 0, UDT_CC, &cchandle, &temp);
+   //UDT::udt_getsockopt(client, 0, UDT_CC, &cchandle, &temp);
    //if (NULL != cchandle)
    //   cchandle->setRate(500);
 
@@ -111,9 +111,9 @@ int main(int argc, char* argv[])
       int ss;
       while (ssize < size)
       {
-         if (UDT::ERROR == (ss = UDT::send(client, data + ssize, size - ssize, 0)))
+         if (UDT::ERROR == (ss = UDT::udt_send(client, data + ssize, size - ssize, 0)))
          {
-            cout << "send:" << UDT::getlasterror().getErrorMessage() << endl;
+            cout << "send:" << UDT::udt_getlasterror().getErrorMessage() << endl;
             break;
          }
 
@@ -124,7 +124,7 @@ int main(int argc, char* argv[])
          break;
    }
 
-   UDT::close(client);
+   UDT::udt_close(client);
    delete [] data;
    return 0;
 }
@@ -149,9 +149,9 @@ DWORD WINAPI monitor(LPVOID s)
          Sleep(1000);
       #endif
 
-      if (UDT::ERROR == UDT::perfmon(u, &perf))
+      if (UDT::ERROR == UDT::udt_perfmon(u, &perf))
       {
-         cout << "perfmon: " << UDT::getlasterror().getErrorMessage() << endl;
+         cout << "perfmon: " << UDT::udt_getlasterror().getErrorMessage() << endl;
          break;
       }
 

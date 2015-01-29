@@ -41,26 +41,26 @@ int createUDTSocket(UDTSOCKET& usock, int port = 0, bool rendezvous = false)
       return -1;
    }
 
-   usock = UDT::socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+   usock = UDT::udt_socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 
    // since we will start a lot of connections, we set the buffer size to smaller value.
    int snd_buf = 16000;
    int rcv_buf = 16000;
-   UDT::setsockopt(usock, 0, UDT_SNDBUF, &snd_buf, sizeof(int));
-   UDT::setsockopt(usock, 0, UDT_RCVBUF, &rcv_buf, sizeof(int));
+   UDT::udt_setsockopt(usock, 0, UDT_SNDBUF, &snd_buf, sizeof(int));
+   UDT::udt_setsockopt(usock, 0, UDT_RCVBUF, &rcv_buf, sizeof(int));
    snd_buf = 8192;
    rcv_buf = 8192;
-   UDT::setsockopt(usock, 0, UDP_SNDBUF, &snd_buf, sizeof(int));
-   UDT::setsockopt(usock, 0, UDP_RCVBUF, &rcv_buf, sizeof(int));
+   UDT::udt_setsockopt(usock, 0, UDP_SNDBUF, &snd_buf, sizeof(int));
+   UDT::udt_setsockopt(usock, 0, UDP_RCVBUF, &rcv_buf, sizeof(int));
    int fc = 16;
-   UDT::setsockopt(usock, 0, UDT_FC, &fc, sizeof(int));
+   UDT::udt_setsockopt(usock, 0, UDT_FC, &fc, sizeof(int));
    bool reuse = true;
-   UDT::setsockopt(usock, 0, UDT_REUSEADDR, &reuse, sizeof(bool));
-   UDT::setsockopt(usock, 0, UDT_RENDEZVOUS, &rendezvous, sizeof(bool));
+   UDT::udt_setsockopt(usock, 0, UDT_REUSEADDR, &reuse, sizeof(bool));
+   UDT::udt_setsockopt(usock, 0, UDT_RENDEZVOUS, &rendezvous, sizeof(bool));
 
-   if (UDT::ERROR == UDT::bind(usock, res->ai_addr, res->ai_addrlen))
+   if (UDT::ERROR == UDT::udt_bind(usock, res->ai_addr, res->ai_addrlen))
    {
-      cout << "bind: " << UDT::getlasterror().getErrorMessage() << endl;
+      cout << "bind: " << UDT::udt_getlasterror().getErrorMessage() << endl;
       return -1;
    }
 
@@ -112,7 +112,7 @@ int connect(UDTSOCKET& usock, int port)
       return -1;
    }
 
-   UDT::connect(usock, peer->ai_addr, peer->ai_addrlen);
+   UDT::udt_connect(usock, peer->ai_addr, peer->ai_addrlen);
 
    freeaddrinfo(peer);
    return 0;
@@ -157,11 +157,11 @@ DWORD WINAPI Test_1_Srv(LPVOID param)
    if (createUDTSocket(serv, g_Server_Port) < 0)
       return NULL;
 
-   UDT::listen(serv, 1024);
+   UDT::udt_listen(serv, 1024);
    sockaddr_storage clientaddr;
    int addrlen = sizeof(clientaddr);
-   UDTSOCKET new_sock = UDT::accept(serv, (sockaddr*)&clientaddr, &addrlen);
-   UDT::close(serv);
+   UDTSOCKET new_sock = UDT::udt_accept(serv, (sockaddr*)&clientaddr, &addrlen);
+   UDT::udt_close(serv);
 
    if (new_sock == UDT::INVALID_SOCK)
    {
@@ -174,10 +174,10 @@ DWORD WINAPI Test_1_Srv(LPVOID param)
    int torecv = g_TotalNum * sizeof(int32_t);
    while (torecv > 0)
    {
-      int rcvd = UDT::recv(new_sock, (char*)buffer + g_TotalNum * sizeof(int32_t) - torecv, torecv, 0);
+      int rcvd = UDT::udt_recv(new_sock, (char*)buffer + g_TotalNum * sizeof(int32_t) - torecv, torecv, 0);
       if (rcvd < 0)
       {
-         cout << "recv: " << UDT::getlasterror().getErrorMessage() << endl;
+         cout << "recv: " << UDT::udt_getlasterror().getErrorMessage() << endl;
          return NULL;
       }
       torecv -= rcvd;
@@ -193,21 +193,21 @@ DWORD WINAPI Test_1_Srv(LPVOID param)
       }
    }
 
-   int eid = UDT::epoll_create();
-   UDT::epoll_add_usock(eid, new_sock);
+   int eid = UDT::udt_epoll_create();
+   UDT::udt_epoll_add_usock(eid, new_sock);
    /*
    set<UDTSOCKET> readfds;
-   if (UDT::epoll_wait(eid, &readfds, NULL, -1) > 0)
+   if (UDT::udt_epoll_wait(eid, &readfds, NULL, -1) > 0)
    {
-      UDT::close(new_sock);
+      UDT::udt_close(new_sock);
    }
    */
 
    UDTSOCKET readfds[1];
    int num = 1;
-   if (UDT::epoll_wait2(eid, readfds, &num, NULL, NULL, -1) > 0)
+   if (UDT::udt_epoll_wait2(eid, readfds, &num, NULL, NULL, -1) > 0)
    {
-      UDT::close(new_sock);
+      UDT::udt_close(new_sock);
    }
 
    return NULL;
@@ -232,16 +232,16 @@ DWORD WINAPI Test_1_Cli(LPVOID param)
    int tosend = g_TotalNum * sizeof(int32_t);
    while (tosend > 0)
    {
-      int sent = UDT::send(client, (char*)buffer + g_TotalNum * sizeof(int32_t) - tosend, tosend, 0);
+      int sent = UDT::udt_send(client, (char*)buffer + g_TotalNum * sizeof(int32_t) - tosend, tosend, 0);
       if (sent < 0)
       {
-         cout << "send: " << UDT::getlasterror().getErrorMessage() << endl;
+         cout << "send: " << UDT::udt_getlasterror().getErrorMessage() << endl;
          return NULL;
       }
       tosend -= sent;
    }
 
-   UDT::close(client);
+   UDT::udt_close(client);
    return NULL;
 }
 
@@ -274,25 +274,25 @@ DWORD WINAPI Test_2_Srv(LPVOID param)
    if (createUDTSocket(serv, g_Server_Port) < 0)
       return NULL;
 
-   UDT::listen(serv, 1024);
+   UDT::udt_listen(serv, 1024);
 
    vector<UDTSOCKET> new_socks;
    new_socks.resize(g_UDTNum);
 
-   int eid = UDT::epoll_create();
+   int eid = UDT::udt_epoll_create();
 
    for (int i = 0; i < g_UDTNum; ++ i)
    {
       sockaddr_storage clientaddr;
       int addrlen = sizeof(clientaddr);
-      new_socks[i] = UDT::accept(serv, (sockaddr*)&clientaddr, &addrlen);
+      new_socks[i] = UDT::udt_accept(serv, (sockaddr*)&clientaddr, &addrlen);
 
       if (new_socks[i] == UDT::INVALID_SOCK)
       {
-         cout << "accept: " << UDT::getlasterror().getErrorMessage() << endl;
+         cout << "accept: " << UDT::udt_getlasterror().getErrorMessage() << endl;
          return NULL;
       }
-      UDT::epoll_add_usock(eid, new_socks[i]);
+      UDT::udt_epoll_add_usock(eid, new_socks[i]);
    }
 
 
@@ -311,7 +311,7 @@ DWORD WINAPI Test_2_Srv(LPVOID param)
       sockaddr_storage clientaddr;
       socklen_t addrlen = sizeof(clientaddr);
       tcp_socks[i] = accept(tcp_serv, (sockaddr*)&clientaddr, &addrlen);
-      UDT::epoll_add_ssock(eid, tcp_socks[i]);
+      UDT::udt_epoll_add_ssock(eid, tcp_socks[i]);
    }
 
 
@@ -321,11 +321,11 @@ DWORD WINAPI Test_2_Srv(LPVOID param)
    int count = g_UDTNum + g_TCPNum;
    while (count > 0)
    {
-      UDT::epoll_wait(eid, &readfds, NULL, -1, &tcpread);
+      UDT::udt_epoll_wait(eid, &readfds, NULL, -1, &tcpread);
       for (set<UDTSOCKET>::iterator i = readfds.begin(); i != readfds.end(); ++ i)
       {
          int32_t data;
-         UDT::recv(*i, (char*)&data, 4, 0);
+         UDT::udt_recv(*i, (char*)&data, 4, 0);
          -- count;
       }
 
@@ -339,7 +339,7 @@ DWORD WINAPI Test_2_Srv(LPVOID param)
 
    for (vector<UDTSOCKET>::iterator i = new_socks.begin(); i != new_socks.end(); ++ i)
    {
-      UDT::close(*i);
+      UDT::udt_close(*i);
    }
 
    for (vector<SYSSOCKET>::iterator i = tcp_socks.begin(); i != tcp_socks.end(); ++ i)
@@ -351,7 +351,7 @@ DWORD WINAPI Test_2_Srv(LPVOID param)
 #endif
    }
 
-   UDT::close(serv);
+   UDT::udt_close(serv);
 #ifndef WIN32
    close(tcp_serv);
 #else
@@ -384,7 +384,7 @@ DWORD WINAPI Test_2_Cli(LPVOID param)
    {
       if (createUDTSocket(cli_socks[i], 0) < 0)
       {
-         cout << "socket: " << UDT::getlasterror().getErrorMessage() << endl;
+         cout << "socket: " << UDT::udt_getlasterror().getErrorMessage() << endl;
          return NULL;
       }
    }
@@ -392,7 +392,7 @@ DWORD WINAPI Test_2_Cli(LPVOID param)
    // create UDT on shared port
    if (createUDTSocket(cli_socks[g_IndUDTNum], 0) < 0)
    {
-      cout << "socket: " << UDT::getlasterror().getErrorMessage() << endl;
+      cout << "socket: " << UDT::udt_getlasterror().getErrorMessage() << endl;
       return NULL;
    }
 
@@ -400,7 +400,7 @@ DWORD WINAPI Test_2_Cli(LPVOID param)
    int size = 0;
    addr = (sockaddr*)new sockaddr_in;
    size = sizeof(sockaddr_in);
-   UDT::getsockname(cli_socks[g_IndUDTNum], addr, &size);
+   UDT::udt_getsockname(cli_socks[g_IndUDTNum], addr, &size);
    char sharedport[NI_MAXSERV];
    getnameinfo(addr, size, NULL, 0, sharedport, sizeof(sharedport), NI_NUMERICSERV);
 
@@ -409,7 +409,7 @@ DWORD WINAPI Test_2_Cli(LPVOID param)
    {
       if (createUDTSocket(cli_socks[i], atoi(sharedport)) < 0)
       {
-         cout << "socket: " << UDT::getlasterror().getErrorMessage() << endl;
+         cout << "socket: " << UDT::udt_getlasterror().getErrorMessage() << endl;
          return NULL;
       }
    }
@@ -417,7 +417,7 @@ DWORD WINAPI Test_2_Cli(LPVOID param)
    {
       if (connect(*i, g_Server_Port) < 0)
       {
-         cout << "connect: " << UDT::getlasterror().getErrorMessage() << endl;
+         cout << "connect: " << UDT::udt_getlasterror().getErrorMessage() << endl;
          return NULL;
       }
    }
@@ -439,7 +439,7 @@ DWORD WINAPI Test_2_Cli(LPVOID param)
    int32_t data = 0;
    for (vector<UDTSOCKET>::iterator i = cli_socks.begin(); i != cli_socks.end(); ++ i)
    {
-      UDT::send(*i, (char*)&data, 4, 0);
+      UDT::udt_send(*i, (char*)&data, 4, 0);
       ++ data;
    }
    for (vector<SYSSOCKET>::iterator i = tcp_socks.begin(); i != tcp_socks.end(); ++ i)
@@ -451,7 +451,7 @@ DWORD WINAPI Test_2_Cli(LPVOID param)
    // close all client sockets
    for (vector<UDTSOCKET>::iterator i = cli_socks.begin(); i != cli_socks.end(); ++ i)
    {
-      UDT::close(*i);
+      UDT::udt_close(*i);
    }
    for (vector<SYSSOCKET>::iterator i = tcp_socks.begin(); i != tcp_socks.end(); ++ i)
    {
@@ -501,12 +501,12 @@ DWORD WINAPI Test_3_Srv(LPVOID param)
    for (vector<UDTSOCKET>::iterator i = srv_socks.begin(); i != srv_socks.end(); ++ i)
    {
       int32_t data = 0;
-      UDT::recv(*i, (char*)&data, 4, 0);
+      UDT::udt_recv(*i, (char*)&data, 4, 0);
    }
 
    for (vector<UDTSOCKET>::iterator i = srv_socks.begin(); i != srv_socks.end(); ++ i)
    {
-      UDT::close(*i);
+      UDT::udt_close(*i);
    }
 
    return NULL;
@@ -541,13 +541,13 @@ DWORD WINAPI Test_3_Cli(LPVOID param)
    int32_t data = 0;
    for (vector<UDTSOCKET>::iterator i = cli_socks.begin(); i != cli_socks.end(); ++ i)
    {
-      UDT::send(*i, (char*)&data, 4, 0);
+      UDT::udt_send(*i, (char*)&data, 4, 0);
       ++ data;
    }
 
    for (vector<UDTSOCKET>::iterator i = cli_socks.begin(); i != cli_socks.end(); ++ i)
    {
-      UDT::close(*i);
+      UDT::udt_close(*i);
    }
 
    return NULL;
@@ -572,7 +572,7 @@ DWORD WINAPI Test_4_Srv(LPVOID param)
    if (createUDTSocket(serv, g_Server_Port) < 0)
       return NULL;
 
-   UDT::listen(serv, 1024);
+   UDT::udt_listen(serv, 1024);
 
    vector<UDTSOCKET> new_socks;
    new_socks.resize(g_UDTNum4);
@@ -581,21 +581,21 @@ DWORD WINAPI Test_4_Srv(LPVOID param)
    {
       sockaddr_storage clientaddr;
       int addrlen = sizeof(clientaddr);
-      new_socks[i] = UDT::accept(serv, (sockaddr*)&clientaddr, &addrlen);
+      new_socks[i] = UDT::udt_accept(serv, (sockaddr*)&clientaddr, &addrlen);
 
       if (new_socks[i] == UDT::INVALID_SOCK)
       {
-         cout << "accept: " << UDT::getlasterror().getErrorMessage() << endl;
+         cout << "accept: " << UDT::udt_getlasterror().getErrorMessage() << endl;
          return NULL;
       }
    }
 
    for (vector<UDTSOCKET>::iterator i = new_socks.begin(); i != new_socks.end(); ++ i)
    {
-      UDT::close(*i);
+      UDT::udt_close(*i);
    }
 
-   UDT::close(serv);
+   UDT::udt_close(serv);
 
    return NULL;
 
@@ -612,7 +612,7 @@ DWORD WINAPI start_and_destroy_clients(LPVOID param)
 
    if (createUDTSocket(cli_socks[0], 0) < 0)
    {
-      cout << "socket: " << UDT::getlasterror().getErrorMessage() << endl;
+      cout << "socket: " << UDT::udt_getlasterror().getErrorMessage() << endl;
       return NULL;
    }
 
@@ -622,7 +622,7 @@ DWORD WINAPI start_and_destroy_clients(LPVOID param)
    addr = (sockaddr*)new sockaddr_in;
    size = sizeof(sockaddr_in);
 
-   UDT::getsockname(cli_socks[0], addr, &size);
+   UDT::udt_getsockname(cli_socks[0], addr, &size);
    char sharedport[NI_MAXSERV];
    getnameinfo(addr, size, NULL, 0, sharedport, sizeof(sharedport), NI_NUMERICSERV);
 
@@ -630,7 +630,7 @@ DWORD WINAPI start_and_destroy_clients(LPVOID param)
    {
       if (createUDTSocket(cli_socks[i], atoi(sharedport)) < 0)
       {
-         cout << "socket: " << UDT::getlasterror().getErrorMessage() << endl;
+         cout << "socket: " << UDT::udt_getlasterror().getErrorMessage() << endl;
          return NULL;
       }
    }
@@ -639,14 +639,14 @@ DWORD WINAPI start_and_destroy_clients(LPVOID param)
    {
       if (connect(*i, g_Server_Port) < 0)
       {
-         cout << "connect: " << UDT::getlasterror().getErrorMessage() << endl;
+         cout << "connect: " << UDT::udt_getlasterror().getErrorMessage() << endl;
          return NULL;
       }
    }
 
    for (vector<UDTSOCKET>::iterator i = cli_socks.begin(); i != cli_socks.end(); ++ i)
    {
-      UDT::close(*i);
+      UDT::udt_close(*i);
    }   
 
    return NULL;
@@ -714,7 +714,7 @@ int main()
    for (int i = 0; i < test_case; ++ i)
    {
       cout << "Start Test # " << i + 1 << endl;
-      UDT::startup();
+      UDT::udt_startup();
 
 #ifndef WIN32
       pthread_t srv, cli;
@@ -730,7 +730,7 @@ int main()
       WaitForSingleObject(cli, INFINITE);
 #endif
 
-      UDT::cleanup();
+      UDT::udt_cleanup();
       cout << "Test # " << i + 1 << " completed." << endl;
    }
 

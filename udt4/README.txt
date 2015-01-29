@@ -11,23 +11,23 @@ UDT version 4 is free software under BSD License. See ./LICENSE.txt.
 
 UDT Website:
 http://udt.sf.net
-http://sf.net/projects/udt/
+http://sf.net/projects/udt/ 
 
 
-CONTENT:
-./src:     UDT source code
-./app:     Example programs
+CONTENT: 
+./src:     UDT source code 
+./app:     Example programs 
 ./doc:     UDT documentation (HTML)
-./win:     Visual C++ project files for the Windows version of UDT
+./win:     Visual C++ project files for the Windows version of UDT 
 
 
-To make:
-     make -e os=XXX arch=YYY
+To make: 
+     make -e os=XXX arch=YYY 
 
-XXX: [LINUX(default), BSD, OSX]
-YYY: [IA32(default), POWERPC, IA64, AMD64, ARM]
+XXX: [LINUX(default), BSD, OSX] 
+YYY: [IA32(default), POWERPC, IA64, AMD64] 
 
-For example, on OS X, you may need to do "make -e os=OSX arch=POWERPC";
+For example, on OS X, you may need to do "make -e os=OSX arch=POWERPC"; 
 on 32-bit i386 Linux system, simply use "make".
 
 On Windows systems, use the Visual C++ project files in ./win directory.

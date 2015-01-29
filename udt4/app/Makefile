@@ -26,10 +26,6 @@ ifeq ($(arch), SPARC)
    CCFLAGS += -DSPARC
 endif
 
-ifeq ($(arch), ARM)
-   CCFLAGS += -DARM
-endif
-
 LDFLAGS = -L../src -ludt -lstdc++ -lpthread -lm
 
 ifeq ($(os), UNIX)

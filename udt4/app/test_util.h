@@ -5,12 +5,12 @@ struct UDTUpDown{
    UDTUpDown()
    {
       // use this function to initialize the UDT library
-      UDT::startup();
+      UDT::udt_startup();
    }
    ~UDTUpDown()
    {
       // use this function to release the UDT library
-      UDT::cleanup();
+      UDT::udt_cleanup();
    }
 };
 

@@ -22,7 +22,7 @@ int main(int argc, char* argv[])
    }
 
    // use this function to initialize the UDT library
-   UDT::startup();
+   UDT::udt_startup();
 
    struct addrinfo hints, *peer;
 
@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
    hints.ai_family = AF_INET;
    hints.ai_socktype = SOCK_STREAM;
 
-   UDTSOCKET fhandle = UDT::socket(hints.ai_family, hints.ai_socktype, hints.ai_protocol);
+   UDTSOCKET fhandle = UDT::udt_socket(hints.ai_family, hints.ai_socktype, hints.ai_protocol);
 
    if (0 != getaddrinfo(argv[1], argv[2], &hints, &peer))
    {
@@ -40,9 +40,9 @@ int main(int argc, char* argv[])
    }
 
    // connect to the server, implict bind
-   if (UDT::ERROR == UDT::connect(fhandle, peer->ai_addr, peer->ai_addrlen))
+   if (UDT::ERROR == UDT::udt_connect(fhandle, peer->ai_addr, peer->ai_addrlen))
    {
-      cout << "connect: " << UDT::getlasterror().getErrorMessage() << endl;
+      cout << "connect: " << UDT::udt_getlasterror().getErrorMessage() << endl;
       return -1;
    }
 
@@ -52,24 +52,24 @@ int main(int argc, char* argv[])
    // send name information of the requested file
    int len = strlen(argv[3]);
 
-   if (UDT::ERROR == UDT::send(fhandle, (char*)&len, sizeof(int), 0))
+   if (UDT::ERROR == UDT::udt_send(fhandle, (char*)&len, sizeof(int), 0))
    {
-      cout << "send: " << UDT::getlasterror().getErrorMessage() << endl;
+      cout << "send: " << UDT::udt_getlasterror().getErrorMessage() << endl;
       return -1;
    }
 
-   if (UDT::ERROR == UDT::send(fhandle, argv[3], len, 0))
+   if (UDT::ERROR == UDT::udt_send(fhandle, argv[3], len, 0))
    {
-      cout << "send: " << UDT::getlasterror().getErrorMessage() << endl;
+      cout << "send: " << UDT::udt_getlasterror().getErrorMessage() << endl;
       return -1;
    }
 
    // get size information
    int64_t size;
 
-   if (UDT::ERROR == UDT::recv(fhandle, (char*)&size, sizeof(int64_t), 0))
+   if (UDT::ERROR == UDT::udt_recv(fhandle, (char*)&size, sizeof(int64_t), 0))
    {
-      cout << "send: " << UDT::getlasterror().getErrorMessage() << endl;
+      cout << "send: " << UDT::udt_getlasterror().getErrorMessage() << endl;
       return -1;
    }
 
@@ -84,18 +84,18 @@ int main(int argc, char* argv[])
    int64_t recvsize; 
    int64_t offset = 0;
 
-   if (UDT::ERROR == (recvsize = UDT::recvfile(fhandle, ofs, offset, size)))
+   if (UDT::ERROR == (recvsize = UDT::udt_recvfile(fhandle, ofs, offset, size)))
    {
-      cout << "recvfile: " << UDT::getlasterror().getErrorMessage() << endl;
+      cout << "recvfile: " << UDT::udt_getlasterror().getErrorMessage() << endl;
       return -1;
    }
 
-   UDT::close(fhandle);
+   UDT::udt_close(fhandle);
 
    ofs.close();
 
    // use this function to release the UDT library
-   UDT::cleanup();
+   UDT::udt_cleanup();
 
    return 0;
 }

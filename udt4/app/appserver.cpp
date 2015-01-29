@@ -52,17 +52,17 @@ int main(int argc, char* argv[])
       return 0;
    }
 
-   UDTSOCKET serv = UDT::socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+   UDTSOCKET serv = UDT::udt_socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 
    // UDT Options
-   //UDT::setsockopt(serv, 0, UDT_CC, new CCCFactory<CUDPBlast>, sizeof(CCCFactory<CUDPBlast>));
-   //UDT::setsockopt(serv, 0, UDT_MSS, new int(9000), sizeof(int));
-   //UDT::setsockopt(serv, 0, UDT_RCVBUF, new int(10000000), sizeof(int));
-   //UDT::setsockopt(serv, 0, UDP_RCVBUF, new int(10000000), sizeof(int));
+   //UDT::udt_setsockopt(serv, 0, UDT_CC, new CCCFactory<CUDPBlast>, sizeof(CCCFactory<CUDPBlast>));
+   //UDT::udt_setsockopt(serv, 0, UDT_MSS, new int(9000), sizeof(int));
+   //UDT::udt_setsockopt(serv, 0, UDT_RCVBUF, new int(10000000), sizeof(int));
+   //UDT::udt_setsockopt(serv, 0, UDP_RCVBUF, new int(10000000), sizeof(int));
 
-   if (UDT::ERROR == UDT::bind(serv, res->ai_addr, res->ai_addrlen))
+   if (UDT::ERROR == UDT::udt_bind(serv, res->ai_addr, res->ai_addrlen))
    {
-      cout << "bind: " << UDT::getlasterror().getErrorMessage() << endl;
+      cout << "bind: " << UDT::udt_getlasterror().getErrorMessage() << endl;
       return 0;
    }
 
@@ -70,9 +70,9 @@ int main(int argc, char* argv[])
 
    cout << "server is ready at port: " << service << endl;
 
-   if (UDT::ERROR == UDT::listen(serv, 10))
+   if (UDT::ERROR == UDT::udt_listen(serv, 10))
    {
-      cout << "listen: " << UDT::getlasterror().getErrorMessage() << endl;
+      cout << "listen: " << UDT::udt_getlasterror().getErrorMessage() << endl;
       return 0;
    }
 
@@ -83,9 +83,9 @@ int main(int argc, char* argv[])
 
    while (true)
    {
-      if (UDT::INVALID_SOCK == (recver = UDT::accept(serv, (sockaddr*)&clientaddr, &addrlen)))
+      if (UDT::INVALID_SOCK == (recver = UDT::udt_accept(serv, (sockaddr*)&clientaddr, &addrlen)))
       {
-         cout << "accept: " << UDT::getlasterror().getErrorMessage() << endl;
+         cout << "accept: " << UDT::udt_getlasterror().getErrorMessage() << endl;
          return 0;
       }
 
@@ -103,7 +103,7 @@ int main(int argc, char* argv[])
       #endif
    }
 
-   UDT::close(serv);
+   UDT::udt_close(serv);
 
    return 0;
 }
@@ -129,10 +129,10 @@ DWORD WINAPI recvdata(LPVOID usocket)
       {
          int rcv_size;
          int var_size = sizeof(int);
-         UDT::getsockopt(recver, 0, UDT_RCVDATA, &rcv_size, &var_size);
-         if (UDT::ERROR == (rs = UDT::recv(recver, data + rsize, size - rsize, 0)))
+         UDT::udt_getsockopt(recver, 0, UDT_RCVDATA, &rcv_size, &var_size);
+         if (UDT::ERROR == (rs = UDT::udt_recv(recver, data + rsize, size - rsize, 0)))
          {
-            cout << "recv:" << UDT::getlasterror().getErrorMessage() << endl;
+            cout << "recv:" << UDT::udt_getlasterror().getErrorMessage() << endl;
             break;
          }
 
@@ -145,7 +145,7 @@ DWORD WINAPI recvdata(LPVOID usocket)
 
    delete [] data;
 
-   UDT::close(recver);
+   UDT::udt_close(recver);
 
    #ifndef WIN32
       return NULL;

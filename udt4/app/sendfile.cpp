@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
    }
 
    // use this function to initialize the UDT library
-   UDT::startup();
+   UDT::udt_startup();
 
    addrinfo hints;
    addrinfo* res;
@@ -48,18 +48,18 @@ int main(int argc, char* argv[])
       return 0;
    }
 
-   UDTSOCKET serv = UDT::socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+   UDTSOCKET serv = UDT::udt_socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 
    // Windows UDP issue
    // For better performance, modify HKLM\System\CurrentControlSet\Services\Afd\Parameters\FastSendDatagramThreshold
 #ifdef WIN32
    int mss = 1052;
-   UDT::setsockopt(serv, 0, UDT_MSS, &mss, sizeof(int));
+   UDT::udt_setsockopt(serv, 0, UDT_MSS, &mss, sizeof(int));
 #endif
 
-   if (UDT::ERROR == UDT::bind(serv, res->ai_addr, res->ai_addrlen))
+   if (UDT::ERROR == UDT::udt_bind(serv, res->ai_addr, res->ai_addrlen))
    {
-      cout << "bind: " << UDT::getlasterror().getErrorMessage() << endl;
+      cout << "bind: " << UDT::udt_getlasterror().getErrorMessage() << endl;
       return 0;
    }
 
@@ -67,7 +67,7 @@ int main(int argc, char* argv[])
 
    cout << "server is ready at port: " << service << endl;
 
-   UDT::listen(serv, 10);
+   UDT::udt_listen(serv, 10);
 
    sockaddr_storage clientaddr;
    int addrlen = sizeof(clientaddr);
@@ -76,9 +76,9 @@ int main(int argc, char* argv[])
 
    while (true)
    {
-      if (UDT::INVALID_SOCK == (fhandle = UDT::accept(serv, (sockaddr*)&clientaddr, &addrlen)))
+      if (UDT::INVALID_SOCK == (fhandle = UDT::udt_accept(serv, (sockaddr*)&clientaddr, &addrlen)))
       {
-         cout << "accept: " << UDT::getlasterror().getErrorMessage() << endl;
+         cout << "accept: " << UDT::udt_getlasterror().getErrorMessage() << endl;
          return 0;
       }
 
@@ -96,10 +96,10 @@ int main(int argc, char* argv[])
       #endif
    }
 
-   UDT::close(serv);
+   UDT::udt_close(serv);
 
    // use this function to release the UDT library
-   UDT::cleanup();
+   UDT::udt_cleanup();
 
    return 0;
 }
@@ -117,15 +117,15 @@ DWORD WINAPI sendfile(LPVOID usocket)
    char file[1024];
    int len;
 
-   if (UDT::ERROR == UDT::recv(fhandle, (char*)&len, sizeof(int), 0))
+   if (UDT::ERROR == UDT::udt_recv(fhandle, (char*)&len, sizeof(int), 0))
    {
-      cout << "recv: " << UDT::getlasterror().getErrorMessage() << endl;
+      cout << "recv: " << UDT::udt_getlasterror().getErrorMessage() << endl;
       return 0;
    }
 
-   if (UDT::ERROR == UDT::recv(fhandle, file, len, 0))
+   if (UDT::ERROR == UDT::udt_recv(fhandle, file, len, 0))
    {
-      cout << "recv: " << UDT::getlasterror().getErrorMessage() << endl;
+      cout << "recv: " << UDT::udt_getlasterror().getErrorMessage() << endl;
       return 0;
    }
    file[len] = '\0';
@@ -138,27 +138,27 @@ DWORD WINAPI sendfile(LPVOID usocket)
    ifs.seekg(0, ios::beg);
 
    // send file size information
-   if (UDT::ERROR == UDT::send(fhandle, (char*)&size, sizeof(int64_t), 0))
+   if (UDT::ERROR == UDT::udt_send(fhandle, (char*)&size, sizeof(int64_t), 0))
    {
-      cout << "send: " << UDT::getlasterror().getErrorMessage() << endl;
+      cout << "send: " << UDT::udt_getlasterror().getErrorMessage() << endl;
       return 0;
    }
 
    UDT::TRACEINFO trace;
-   UDT::perfmon(fhandle, &trace);
+   UDT::udt_perfmon(fhandle, &trace);
 
    // send the file
    int64_t offset = 0;
-   if (UDT::ERROR == UDT::sendfile(fhandle, ifs, offset, size))
+   if (UDT::ERROR == UDT::udt_sendfile(fhandle, ifs, offset, size))
    {
-      cout << "sendfile: " << UDT::getlasterror().getErrorMessage() << endl;
+      cout << "sendfile: " << UDT::udt_getlasterror().getErrorMessage() << endl;
       return 0;
    }
 
-   UDT::perfmon(fhandle, &trace);
+   UDT::udt_perfmon(fhandle, &trace);
    cout << "speed = " << trace.mbpsSendRate << "Mbits/sec" << endl;
 
-   UDT::close(fhandle);
+   UDT::udt_close(fhandle);
 
    ifs.close();
 
