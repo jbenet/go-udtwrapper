@@ -149,15 +149,15 @@ func Listen(udtAddr string, tcpAddr string, bs int64) error {
 			log("accepted connection from %s", c.RemoteAddr())
 
 			go func() {
+				defer c.Close()
 				for {
 					select {
 					case <-done:
-						c.Close()
 						return
 					default:
 						n, e := io.CopyN(c, c, bs)
 						if e == io.EOF {
-							c.Close()
+							log("read EOF, close client socket")
 							return
 						}
 						log("Copied back %d bytes", n)
@@ -206,7 +206,8 @@ func benchmark(c net.Conn, bs int64) (err error) {
 	}
 	log("piping random to connection")
 
-	done := make(chan interface{}, 2)
+	stopSend := make(chan interface{})
+	stopRecv := make(chan interface{})
 	var sent, recved int64
 	startTime := time.Now()
 
@@ -218,13 +219,17 @@ func benchmark(c net.Conn, bs int64) (err error) {
 		ticker := time.Tick(time.Second)
 		for {
 			select {
+			case <-stopSend:
+				log("stop send now")
+				return
 			case <-ticker:
 				reportStat("Sent", sent)
-			case <-done:
-				return
 			default:
-				n, _ := io.CopyN(c, rand, bs)
-				sent = sent + n
+				// flow control
+				if sent < recved+10*bs {
+					n, _ := io.CopyN(c, rand, bs)
+					sent = sent + n
+				}
 			}
 		}
 	}()
@@ -232,10 +237,11 @@ func benchmark(c net.Conn, bs int64) (err error) {
 		ticker := time.Tick(time.Second)
 		for {
 			select {
+			case <-stopRecv:
+				log("stop recv now")
+				return
 			case <-ticker:
 				reportStat("Recv", recved)
-			case <-done:
-				return
 			default:
 				n, _ := io.CopyN(ioutil.Discard, c, bs)
 				recved = recved + n
@@ -249,10 +255,9 @@ func benchmark(c net.Conn, bs int64) (err error) {
 		syscall.SIGTERM, syscall.SIGQUIT)
 	<-sigc
 	fmt.Println("Quit now, final result:")
-	done <- nil
-	done <- nil
+	stopSend <- nil
+	stopRecv <- nil
 	reportStat("Sent", sent)
 	reportStat("Recv", recved)
-	c.Close()
 	return
 }
