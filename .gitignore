@@ -1,7 +1,0 @@
-*.o
-*.dylib
-*.a
-udt4/app/test
-udt4/app/appclient
-udt4/app/appserver
-udtcat/udtcat
