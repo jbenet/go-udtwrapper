@@ -149,20 +149,20 @@ func Listen(udtAddr string, tcpAddr string, bs int64) error {
 			log("accepted connection from %s", c.RemoteAddr())
 
 			go func() {
-				var n int64
 				for {
 					select {
 					case <-done:
+						c.Close()
 						return
 					default:
-						n, err = io.CopyN(c, c, bs)
-						if err != nil {
+						n, e := io.CopyN(c, c, bs)
+						if e == io.EOF {
+							c.Close()
 							return
 						}
 						log("Copied back %d bytes", n)
 					}
 				}
-				c.Close()
 
 				return
 			}()
@@ -176,6 +176,7 @@ func Listen(udtAddr string, tcpAddr string, bs int64) error {
 	signal.Notify(sigc, syscall.SIGHUP, syscall.SIGINT,
 		syscall.SIGTERM, syscall.SIGQUIT)
 	<-sigc
+	fmt.Println("Quit now")
 	done <- nil
 	return nil
 }
@@ -247,6 +248,8 @@ func benchmark(c net.Conn, bs int64) (err error) {
 	signal.Notify(sigc, syscall.SIGHUP, syscall.SIGINT,
 		syscall.SIGTERM, syscall.SIGQUIT)
 	<-sigc
+	fmt.Println("Quit now, final result:")
+	done <- nil
 	done <- nil
 	reportStat("Sent", sent)
 	reportStat("Recv", recved)
