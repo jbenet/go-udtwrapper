@@ -9,3 +9,9 @@ This is a cgo wrapper around the main C++ UDT implementation.
 ## Tools:
 
 - [udtcat](udtcat/) - netcat using the udt pkg
+
+## Try:
+
+```sh
+(cd udtcat; go build; ./test_simple.sh)
+```

@@ -20,7 +20,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	udt "github.com/jbenet/go-udtwrapper/udt"
+	udt "github.com/fffw/go-udtwrapper"
 )
 
 var verbose = false

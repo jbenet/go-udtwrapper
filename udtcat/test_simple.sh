@@ -17,7 +17,7 @@ test_send() {
 
   # generate random data
   log "generating $count bytes of random data"
-  ./random $count $RANDOM > ${file}expected
+  dd if=/dev/random of=${file}expected bs=1 count=$count
 
   # dialer sends
   log "sending from dialer"
