@@ -115,7 +115,12 @@ func (fd *udtFD) connectionCheck(ctxgrp.ContextGroup) {
 
 // lastErrorOp returns the last error as a net.OpError.
 func (fd *udtFD) lastErrorOp(op string) *net.OpError {
-	return &net.OpError{op, fd.net, fd.laddr, lastError()}
+	return &net.OpError{
+		Op:   op,
+		Net:  fd.net,
+		Addr: fd.laddr,
+		Err:  lastError(),
+	}
 }
 
 func (fd *udtFD) name() string {
@@ -317,11 +322,11 @@ func closeSocket(sock C.UDTSOCKET) error {
 func dialFD(laddr, raddr *UDTAddr) (*udtFD, error) {
 
 	if raddr == nil {
-		return nil, &net.OpError{"dial", "udt", raddr, errors.New("invalid remote address")}
+		return nil, &net.OpError{Op: "dial", Net: "udt", Addr: raddr, Err: errors.New("invalid remote address")}
 	}
 
 	if laddr != nil && laddr.AF() != raddr.AF() {
-		return nil, &net.OpError{"dial", "udt", raddr, errors.New("differing remote address network")}
+		return nil, &net.OpError{Op: "dial", Net: "udt", Addr: raddr, Err: errors.New("differing remote address network")}
 	}
 
 	sock, err := socket(raddr.AF())
@@ -359,7 +364,7 @@ func dialFD(laddr, raddr *UDTAddr) (*udtFD, error) {
 func listenFD(laddr *UDTAddr) (*udtFD, error) {
 
 	if laddr == nil {
-		return nil, &net.OpError{"dial", "udt", nil, errors.New("invalid address")}
+		return nil, &net.OpError{Op: "dial", Net: "udt", Err: errors.New("invalid address")}
 	}
 
 	sock, err := socket(laddr.AF())

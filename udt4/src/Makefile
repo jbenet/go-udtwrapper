@@ -44,7 +44,7 @@ all: libudt.so libudt.a udt
 
 libudt.so: $(OBJS)
 ifneq ($(os), OSX)
-	$(C++) -pthread -static -o $@ $^
+	$(C++) -pthread -shared -o $@ $^
 else
 	$(C++) -dynamiclib -o libudt.dylib -lstdc++ -lpthread -lm $^ -undefined suppress -flat_namespace
 endif
