@@ -260,6 +260,20 @@ func (fd *udtFD) connect(raddr *UDTAddr) error {
 	}
 
 	fd.raddr = raddr
+	if fd.laddr == nil {
+		var lsa syscall.RawSockaddrAny
+		var namelen C.int
+		if C.udt_getsockname(fd.sock, (*C.struct_sockaddr)(unsafe.Pointer(&lsa)), &namelen) == C.ERROR {
+			err := lastError()
+			return fmt.Errorf("error getting local sockaddr: %s", err)
+		}
+		laddr, err := addrWithSockaddr(&lsa)
+		if err != nil {
+			return err
+		}
+
+		fd.laddr = laddr
+	}
 	return fd.setAsyncOpts()
 }
 
