@@ -53,6 +53,10 @@ func (a *UDTAddr) IPPROTO() int {
 	return sockaddrnet.NetAddrAF(a.addr)
 }
 
+func (a *UDTAddr) UDPAddr() *net.UDPAddr {
+	return a.addr
+}
+
 func udt2udp(n string) (string, error) {
 	switch n {
 	case "udt":
