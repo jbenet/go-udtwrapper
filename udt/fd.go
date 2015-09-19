@@ -4,12 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"runtime"
 	"syscall"
 	"time"
 	"unsafe"
-
-	ctxgrp "github.com/jbenet/go-ctxgroup"
 )
 
 // #cgo CFLAGS: -Wall
@@ -59,21 +56,15 @@ type semaphore chan struct{}
 
 // udtFD (wraps udt.socket)
 type udtFD struct {
-	csema semaphore
-	rsema semaphore
-	wsema semaphore
-	proc  ctxgrp.ContextGroup
-
 	refcnt int32
 	bound  bool
 
 	// immutable until Close
-	sock        C.UDTSOCKET
-	localClose  bool
-	isConnected bool
-	net         string
-	laddr       *UDTAddr
-	raddr       *UDTAddr
+	sock C.UDTSOCKET
+
+	net   string
+	laddr *UDTAddr
+	raddr *UDTAddr
 }
 
 func newFD(sock C.UDTSOCKET, laddr, raddr *UDTAddr, net string) (*udtFD, error) {
@@ -81,39 +72,7 @@ func newFD(sock C.UDTSOCKET, laddr, raddr *UDTAddr, net string) (*udtFD, error) 
 	rac := raddr.copy()
 	fd := &udtFD{sock: sock, laddr: lac, raddr: rac, net: net}
 
-	// sync managing.
-	fd.csema = make(semaphore, 1)
-	fd.rsema = make(semaphore, 1)
-	fd.wsema = make(semaphore, 1)
-	fd.csema <- signal{}
-	fd.rsema <- signal{}
-	fd.wsema <- signal{}
-	fd.proc = ctxgrp.WithTeardown(fd.teardown)
-	fd.proc.AddChildFunc(fd.connectionCheck)
-	runtime.SetFinalizer(fd, (*udtFD).Close)
 	return fd, nil
-}
-
-func (fd *udtFD) connectionCheck(ctxgrp.ContextGroup) {
-
-	for {
-		select {
-		case <-fd.proc.Closing():
-			<-time.After(500 * time.Millisecond) // wait for flushing to happen (TODO)
-			<-fd.csema                           // take it forever.
-			go closeSocket(fd.sock)
-			return
-
-		// check for connection death
-		case <-time.After(time.Duration(UDT_ASYNC_TIMEOUT) * time.Millisecond):
-			if getSocketStatus(fd.sock).inTeardown() {
-				<-time.After(500 * time.Millisecond) // wait for flushing to happen (TODO)
-				<-fd.csema                           // take it forever.
-				go fd.Close()
-				return
-			}
-		}
-	}
 }
 
 // lastErrorOp returns the last error as a net.OpError.
@@ -159,34 +118,6 @@ func (fd *udtFD) setDefaultOpts() error {
 	return nil
 }
 
-func (fd *udtFD) setAsyncOpts() error {
-
-	if C.udt_setsockopt(fd.sock, 0, C.UDT_RCVTIMEO, unsafe.Pointer(&UDT_RCVTIMEO_MS), C.sizeof_int) != 0 {
-		return fmt.Errorf("failed to set UDT_RCVTIMEO: %s", lastError())
-	}
-
-	if C.udt_setsockopt(fd.sock, 0, C.UDT_SNDTIMEO, unsafe.Pointer(&UDT_SNDTIMEO_MS), C.sizeof_int) != 0 {
-		return fmt.Errorf("failed to set UDT_SNDTIMEO: %s", lastError())
-	}
-
-	// full async is off
-
-	// options
-	// falseint := C.int(0)
-
-	// // set sending to be async
-	// if C.udt_setsockopt(fd.sock, 0, C.UDT_SNDSYN, unsafe.Pointer(&falseint), C.sizeof_int) != 0 {
-	// 	return fmt.Errorf("failed to set UDT_SNDSYN: %s", lastError())
-	// }
-
-	// // set receiving to be async
-	// if C.udt_setsockopt(fd.sock, 0, C.UDT_RCVSYN, unsafe.Pointer(&falseint), C.sizeof_int) != 0 {
-	// 	return fmt.Errorf("failed to set UDT_RCVSYN: %s", lastError())
-	// }
-
-	return nil
-}
-
 func (fd *udtFD) bind() error {
 	_, sa, salen, err := fd.laddr.socketArgs()
 	if err != nil {
@@ -211,11 +142,6 @@ func (fd *udtFD) listen(backlog int) error {
 }
 
 func (fd *udtFD) accept() (*udtFD, error) {
-	if err := fd.incref(); err != nil {
-		return nil, err
-	}
-	defer fd.decref()
-
 	var sa syscall.RawSockaddrAny
 	var salen C.int
 
@@ -237,19 +163,10 @@ func (fd *udtFD) accept() (*udtFD, error) {
 		return nil, err
 	}
 
-	if err = remotefd.setAsyncOpts(); err != nil {
-		remotefd.Close()
-		return nil, err
-	}
-
 	return remotefd, nil
 }
 
 func (fd *udtFD) connect(raddr *UDTAddr) error {
-	if err := fd.incref(); err != nil {
-		return err
-	}
-	defer fd.decref()
 
 	_, sa, salen, err := raddr.socketArgs()
 	if err != nil {
@@ -277,17 +194,19 @@ func (fd *udtFD) connect(raddr *UDTAddr) error {
 
 		fd.laddr = laddr
 	}
-	return fd.setAsyncOpts()
+	return nil
 }
 
 func (fd *udtFD) Close() error {
-	return fd.proc.Close()
-}
-
-func (fd *udtFD) teardown() error {
-	closeSocket(fd.sock)
+	err := closeSocket(fd.sock)
 	fd.sock = -1
-	runtime.SetFinalizer(fd, nil)
+	if err != nil {
+		if err.Error() == "Operation not supported: Invalid socket ID." {
+			// this ones okay, just means its already closed, somewhere
+			return nil
+		}
+		return err
+	}
 	return nil
 }
 
