@@ -40,6 +40,9 @@ var (
 	UDT_ASYNC_TIMEOUT = 40
 )
 
+// rebind this here for type safety
+var INVALID_SOCK C.UDTSOCKET = C.UDTSOCKET(C.INVALID_SOCK)
+
 func init() {
 	// adjust the rcvbuf to our max.
 	max, err := maxRcvBufSize()
@@ -217,7 +220,7 @@ func (fd *udtFD) accept() (*udtFD, error) {
 	var salen C.int
 
 	sock2 := C.udt_accept(fd.sock, (*C.struct_sockaddr)(unsafe.Pointer(&sa)), &salen)
-	if sock2 == C.INVALID_SOCK {
+	if sock2 == INVALID_SOCK {
 		err := fd.lastErrorOp("accept")
 		return nil, err
 	}
@@ -318,8 +321,8 @@ func lastError() error {
 func socket(addrfamily int) (sock C.UDTSOCKET, reterr error) {
 
 	sock = C.udt_socket(C.int(addrfamily), C.SOCK_STREAM, 0)
-	if sock == C.INVALID_SOCK {
-		return C.INVALID_SOCK, fmt.Errorf("invalid socket: %s", lastError())
+	if sock == INVALID_SOCK {
+		return INVALID_SOCK, fmt.Errorf("invalid socket: %s", lastError())
 	}
 
 	return sock, nil
