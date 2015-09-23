@@ -96,28 +96,6 @@ func (fd *udtFD) name() string {
 	return fd.net + ":" + ls + "->" + rs
 }
 
-func (fd *udtFD) setDefaultOpts() error {
-
-	// reduce maximum size
-	if C.udt_setsockopt(fd.sock, 0, C.UDP_RCVBUF, unsafe.Pointer(&UDP_RCVBUF_SIZE), C.sizeof_int) != 0 {
-		return fmt.Errorf("failed to set UDP_RCVBUF: %d, %s", UDP_RCVBUF_SIZE, lastError())
-	}
-
-	// set UDT_REUSEADDR
-	trueint := C.int(1)
-	if C.udt_setsockopt(fd.sock, 0, C.UDT_REUSEADDR, unsafe.Pointer(&trueint), C.sizeof_int) != 0 {
-		return fmt.Errorf("failed to set UDT_REUSEADDR: %s", lastError())
-	}
-
-	// unset UDT_LINGER
-	// falseint := C.int(0)
-	// if C.udt_setsockopt(fd.sock, 0, C.UDT_LINGER, unsafe.Pointer(&falseint), C.sizeof_int) != 0 {
-	// 	return fmt.Errorf("failed to set UDT_LINGER: %s", lastError())
-	// }
-
-	return nil
-}
-
 func (fd *udtFD) bind() error {
 	_, sa, salen, err := fd.laddr.socketArgs()
 	if err != nil {
@@ -276,11 +254,6 @@ func dialFD(laddr, raddr *UDTAddr) (*udtFD, error) {
 		return nil, err
 	}
 
-	if err := fd.setDefaultOpts(); err != nil {
-		fd.Close()
-		return nil, err
-	}
-
 	if laddr != nil {
 		if err := fd.bind(); err != nil {
 			fd.Close()
@@ -311,11 +284,6 @@ func listenFD(laddr *UDTAddr) (*udtFD, error) {
 	fd, err := newFD(sock, laddr, nil, "udt")
 	if err != nil {
 		closeSocket(sock)
-		return nil, err
-	}
-
-	if err := fd.setDefaultOpts(); err != nil {
-		fd.Close()
 		return nil, err
 	}
 

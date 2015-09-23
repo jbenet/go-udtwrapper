@@ -48,10 +48,6 @@ func TestUdtFDConstruct(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := fd.setDefaultOpts(); err != nil {
-		t.Fatal(err)
-	}
-
 	if fd.name() != "udt::1234->" {
 		t.Fatal("incorrect name:", fd.name())
 	}
@@ -115,8 +111,6 @@ func TestUdtFDListenOnly(t *testing.T) {
 	assert(t, nil == err, err)
 	fd, err := newFD(s, la, nil, "udt")
 	assert(t, nil == err, err)
-	err = fd.setDefaultOpts()
-	assert(t, nil == err, err)
 
 	if err := fd.listen(10); err == nil {
 		t.Fatal("should fail. must bind first")
@@ -148,10 +142,6 @@ func TestUdtFDAcceptAndConnect(t *testing.T) {
 	fdl, err := newFD(sl, al, nil, "udt")
 	assert(t, nil == err, err)
 	fdc, err := newFD(sc, nil, nil, "udt")
-	assert(t, nil == err, err)
-	err = fdl.setDefaultOpts()
-	assert(t, nil == err, err)
-	err = fdc.setDefaultOpts()
 	assert(t, nil == err, err)
 	err = fdl.bind()
 	assert(t, nil == err, err)
@@ -212,8 +202,6 @@ func TestUdtFDAcceptAndDialFD(t *testing.T) {
 	sl, err := socket(al.AF())
 	assert(t, nil == err, err)
 	fdl, err := newFD(sl, al, nil, "udt")
-	assert(t, nil == err, err)
-	err = fdl.setDefaultOpts()
 	assert(t, nil == err, err)
 	err = fdl.bind()
 	assert(t, nil == err, err)

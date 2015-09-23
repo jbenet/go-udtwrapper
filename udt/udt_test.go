@@ -20,8 +20,10 @@ func TestStressOps(t *testing.T) {
 	srcbuf := make([]byte, 50000)
 	rand.Read(srcbuf)
 
-	numcons := 200
-	numloops := 5000
+	endmsg := []byte("test end")
+
+	numcons := 100
+	numloops := 4000
 
 	var wg sync.WaitGroup
 	for i := 0; i < numcons; i++ {
@@ -45,6 +47,16 @@ func TestStressOps(t *testing.T) {
 			}
 
 			fmt.Printf("%d/%d done sending\n", nc, numcons)
+
+			// now read test end message
+			buf := make([]byte, len(endmsg))
+			_, err = io.ReadFull(con, buf)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !bytes.Equal(buf, endmsg) {
+				t.Fatal("got bad data")
+			}
 		}(i)
 	}
 
@@ -61,9 +73,9 @@ func TestStressOps(t *testing.T) {
 			defer c.Close()
 			buf := make([]byte, 1024)
 			for i := 0; i < numloops; i++ {
-				_, err := io.ReadFull(c, buf)
+				n, err := io.ReadFull(c, buf)
 				if err != nil {
-					t.Fatal(err)
+					t.Fatalf("read errored after %d bytes [loop %d]: %s", n, i, err)
 				}
 
 				if !bytes.Equal(buf, srcbuf[i:i+1024]) {
@@ -72,6 +84,15 @@ func TestStressOps(t *testing.T) {
 			}
 
 			fmt.Printf("%d/%d done receiving\n", nc, numcons)
+
+			n, err := c.Write(endmsg)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if n != len(endmsg) {
+				t.Fatal("wasnt able to correctly send response message")
+			}
 		}(i, c)
 	}
 
