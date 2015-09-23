@@ -3,6 +3,7 @@ package udt
 import (
 	"bytes"
 	"crypto/rand"
+	"fmt"
 	"io"
 	"net"
 	"sync"
@@ -25,7 +26,7 @@ func TestStressOps(t *testing.T) {
 	var wg sync.WaitGroup
 	for i := 0; i < numcons; i++ {
 		wg.Add(1)
-		go func() {
+		go func(nc int) {
 			defer wg.Done()
 			con, err := Dial("udt", addr)
 			if err != nil {
@@ -42,7 +43,9 @@ func TestStressOps(t *testing.T) {
 					t.Fatal("wrote wrong amount")
 				}
 			}
-		}()
+
+			fmt.Printf("%d/%d done sending\n", nc, numcons)
+		}(i)
 	}
 
 	var rwg sync.WaitGroup
@@ -53,7 +56,7 @@ func TestStressOps(t *testing.T) {
 		}
 
 		rwg.Add(1)
-		go func(c net.Conn) {
+		go func(nc int, c net.Conn) {
 			defer rwg.Done()
 			defer c.Close()
 			buf := make([]byte, 1024)
@@ -67,7 +70,9 @@ func TestStressOps(t *testing.T) {
 					t.Fatal("read wrong data")
 				}
 			}
-		}(c)
+
+			fmt.Printf("%d/%d done receiving\n", nc, numcons)
+		}(i, c)
 	}
 
 	wg.Wait()
