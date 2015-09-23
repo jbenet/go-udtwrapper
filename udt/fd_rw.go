@@ -1,7 +1,6 @@
 package udt
 
 import (
-	"fmt"
 	"io"
 	"unsafe"
 )
