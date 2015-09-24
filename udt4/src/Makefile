@@ -1,16 +1,16 @@
 C++ = g++
 
 ifndef os
-   os = LINUX
+   os = $(shell uname)
 endif
 
 ifndef arch
-   arch = IA32
+   arch = $(shell uname -m)
 endif
 
 CCFLAGS = -fPIC -Wall -Wextra -D$(os) -finline-functions -O3 -fno-strict-aliasing -fvisibility=hidden
 
-ifeq ($(arch), IA32)
+ifeq ($(arch), ia32)
    CCFLAGS += -DIA32
 endif
 
@@ -18,15 +18,19 @@ ifeq ($(arch), POWERPC)
    CCFLAGS += -mcpu=powerpc
 endif
 
-ifeq ($(arch), SPARC)
+ifeq ($(arch), sparc64)
    CCFLAGS += -DSPARC
 endif
 
-ifeq ($(arch), IA64)
+ifeq ($(arch), ia64)
    CCFLAGS += -DIA64
 endif
 
-ifeq ($(arch), AMD64)
+ifeq ($(arch), x86_64)
+   CCFLAGS += -DAMD64
+endif
+
+ifeq ($(arch), amd64)
    CCFLAGS += -DAMD64
 endif
 
@@ -43,7 +47,7 @@ all: libudt.so libudt.a udt
 	$(C++) $(CCFLAGS) $< -c
 
 libudt.so: $(OBJS)
-ifneq ($(os), OSX)
+ifneq ($(os), Darwin)
 	$(C++) -pthread -shared -o $@ $^
 else
 	$(C++) -dynamiclib -o libudt.dylib -lstdc++ -lpthread -lm $^ -undefined suppress -flat_namespace
