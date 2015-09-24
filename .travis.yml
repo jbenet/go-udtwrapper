@@ -1,0 +1,9 @@
+language: go
+
+go:
+    - 1.4.2
+    - 1.5.1
+
+install: make go-deps
+
+script: cd udt && go test -v

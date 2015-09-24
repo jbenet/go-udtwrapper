@@ -3,8 +3,19 @@ package udt
 import (
 	"fmt"
 	"io"
+	"sync"
 	"testing"
 )
+
+var lastgivenport = 2000
+var portlock sync.Mutex
+
+func getTestAddr() string {
+	portlock.Lock()
+	defer portlock.Unlock()
+	lastgivenport++
+	return fmt.Sprintf("127.0.0.1:%d", lastgivenport)
+}
 
 func TestResolveUDTAddr(t *testing.T) {
 	a, err := ResolveUDTAddr("udt", ":1234")
@@ -22,7 +33,8 @@ func TestResolveUDTAddr(t *testing.T) {
 }
 
 func TestListenOnly(t *testing.T) {
-	l, err := Listen("udt", ":2235")
+	addr := getTestAddr()
+	l, err := Listen("udt", addr)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,7 +48,8 @@ func TestListenOnly(t *testing.T) {
 }
 
 func TestListenAndDial(t *testing.T) {
-	l, err := Listen("udt", "127.0.0.1:2335")
+	addr := getTestAddr()
+	l, err := Listen("udt", addr)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,13 +57,15 @@ func TestListenAndDial(t *testing.T) {
 	cerrs := make(chan error, 10)
 	go func() {
 		defer close(cerrs)
-		c1, err := Dial("udt", "127.0.0.1:2335")
+		c1, err := Dial("udt", addr)
 		if err != nil {
+			t.Log("DIAL ERR: ", err)
 			cerrs <- err
 			return
 		}
 
 		if c1.RemoteAddr().String() != l.Addr().String() {
+			t.Log("address not the same")
 			cerrs <- fmt.Errorf("addrs should be the same")
 		}
 
@@ -85,17 +100,17 @@ func TestListenAndDial(t *testing.T) {
 }
 
 func TestConnReadWrite(t *testing.T) {
-	al, err := ResolveUDTAddr("udt", "127.0.0.1:2534")
+	addr := getTestAddr()
+	al, err := ResolveUDTAddr("udt", addr)
 	assert(t, nil == err, err)
 
 	cerrs := make(chan error, 10)
 	go func() {
 		defer close(cerrs)
-		c2, err := Dial("udt", "127.0.0.1:2534")
+		c2, err := Dial("udt", addr)
 		assert(t, nil == err, err)
 
-		n, err := io.Copy(c2, c2)
-		fmt.Printf("echoed %d bytes\n", n)
+		_, err = io.Copy(c2, c2)
 		if err != nil {
 			cerrs <- err
 		}
@@ -121,12 +136,10 @@ func TestConnReadWrite(t *testing.T) {
 	_, err = l.Accept()
 	assert(t, err != nil, "should not be able to listen after closing")
 
-	fmt.Printf("closed and waiting\n")
 	// drain connector errs
 	for err := range cerrs {
 		if err != nil {
 			t.Fatal(err)
 		}
 	}
-	fmt.Printf("done\n")
 }
