@@ -31,6 +31,6 @@ func TestReadTimeout(t *testing.T) {
 		t.Fatal("should not be return succeed")
 	}
 	if opError, ok := err.(*net.OpError); !ok || !opError.Timeout() {
-		t.Fatalf("should be a read timeout error:", err)
+		t.Fatalf("should be a read timeout error:%s", err)
 	}
 }
