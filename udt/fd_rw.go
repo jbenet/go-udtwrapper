@@ -31,7 +31,8 @@ func (fd *udtFD) udtIOError(op string) error {
 		// TODO: maybe return some sort of error? this is weird
 	case C.UDT_EASYNCRCV, C.UDT_EASYNCSND: // no data to read (async)
 	case C.UDT_ETIMEOUT: // timeout that we triggered
-		return &net.OpError{Op: op, Net: "udt", Source: fd.laddr, Addr: fd.raddr, Err: os.NewSyscallError(op, syscall.ETIMEDOUT)}
+		// return &net.OpError{Op: op, Net: "udt", Source: fd.laddr, Addr: fd.raddr, Err: os.NewSyscallError(op, syscall.ETIMEDOUT)}
+		return &net.OpError{Op: op, Net: "udt", Addr: fd.raddr, Err: os.NewSyscallError(op, syscall.ETIMEDOUT)}
 	case C.UDT_EINVSOCK:
 		// This one actually means that the socket was closed
 		return io.EOF
