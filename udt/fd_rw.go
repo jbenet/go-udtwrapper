@@ -2,6 +2,9 @@ package udt
 
 import (
 	"io"
+	"net"
+	"os"
+	"syscall"
 	"unsafe"
 )
 
@@ -20,7 +23,7 @@ func slice2cbuf(buf []byte) *C.char {
 
 // udtIOError interprets the udt_getlasterror_code and returns an
 // error if IO systems should stop.
-func (fd *udtFD) udtIOError() error {
+func (fd *udtFD) udtIOError(op string) error {
 	ec := C.udt_getlasterror_code()
 	switch ec {
 	case C.UDT_SUCCESS: // success :)
@@ -28,6 +31,7 @@ func (fd *udtFD) udtIOError() error {
 		// TODO: maybe return some sort of error? this is weird
 	case C.UDT_EASYNCRCV, C.UDT_EASYNCSND: // no data to read (async)
 	case C.UDT_ETIMEOUT: // timeout that we triggered
+		return &net.OpError{Op: op, Net: "udt", Source: fd.laddr, Addr: fd.raddr, Err: os.NewSyscallError(op, syscall.ETIMEDOUT)}
 	case C.UDT_EINVSOCK:
 		// This one actually means that the socket was closed
 		return io.EOF
@@ -42,7 +46,7 @@ func (fd *udtFD) Read(buf []byte) (int, error) {
 	n := int(C.udt_recv(fd.sock, slice2cbuf(buf), C.int(len(buf)), 0))
 	if C.int(n) == C.ERROR {
 		// got problems?
-		return 0, fd.udtIOError()
+		return 0, fd.udtIOError("read")
 	}
 	return n, nil
 }
@@ -63,7 +67,7 @@ func (fd *udtFD) write(buf []byte) (int, error) {
 	n := int(C.udt_send(fd.sock, slice2cbuf(buf), C.int(len(buf)), 0))
 	if C.int(n) == C.ERROR {
 		// UDT Error?
-		return 0, fd.udtIOError()
+		return 0, fd.udtIOError("write")
 	}
 
 	return n, nil

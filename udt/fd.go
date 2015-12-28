@@ -198,16 +198,32 @@ func (fd *udtFD) RemoteAddr() net.Addr {
 	return fd.raddr
 }
 
+func (fd *udtFD) setSockOpt(optname C.SOCKOPT, optval unsafe.Pointer, optlen int) error {
+	n := int(C.udt_setsockopt(fd.sock, 0, optname, optval, (C.int)(optlen)))
+	if n == C.UDT_SUCCESS {
+		return nil
+	}
+	return lastError()
+}
+
 func (fd *udtFD) SetDeadline(t time.Time) error {
-	panic("not yet implemented")
+	timeout := int(t.Sub(time.Now()) / time.Millisecond)
+	err1 := fd.setSockOpt(C.UDT_RCVTIMEO, unsafe.Pointer(&timeout), int(unsafe.Sizeof(timeout)))
+	err2 := fd.setSockOpt(C.UDT_SNDTIMEO, unsafe.Pointer(&timeout), int(unsafe.Sizeof(timeout)))
+	if err1 != nil {
+		return err1
+	}
+	return err2
 }
 
 func (fd *udtFD) SetReadDeadline(t time.Time) error {
-	panic("not yet implemented")
+	timeout := int(t.Sub(time.Now()) / time.Millisecond)
+	return fd.setSockOpt(C.UDT_RCVTIMEO, unsafe.Pointer(&timeout), int(unsafe.Sizeof(timeout)))
 }
 
 func (fd *udtFD) SetWriteDeadline(t time.Time) error {
-	panic("not yet implemented")
+	timeout := int(t.Sub(time.Now()) / time.Millisecond)
+	return fd.setSockOpt(C.UDT_SNDTIMEO, unsafe.Pointer(&timeout), int(unsafe.Sizeof(timeout)))
 }
 
 // lastError returns the last error as a Go string.
