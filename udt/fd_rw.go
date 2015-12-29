@@ -27,14 +27,17 @@ func (fd *udtFD) udtIOError(op string) error {
 	ec := C.udt_getlasterror_code()
 	switch ec {
 	case C.UDT_SUCCESS: // success :)
+		fallthrough
 	case C.UDT_ECONNFAIL, C.UDT_ECONNLOST: // connection closed
 		// TODO: maybe return some sort of error? this is weird
+		fallthrough
 	case C.UDT_EASYNCRCV, C.UDT_EASYNCSND: // no data to read (async)
-	case C.UDT_ETIMEOUT: // timeout that we triggered
-		return &net.OpError{Op: op, Net: "udt", Source: fd.laddr, Addr: fd.raddr, Err: os.NewSyscallError(op, syscall.ETIMEDOUT)}
+		fallthrough
 	case C.UDT_EINVSOCK:
 		// This one actually means that the socket was closed
 		return io.EOF
+	case C.UDT_ETIMEOUT: // timeout that we triggered
+		return &net.OpError{Op: op, Net: "udt", Source: fd.laddr, Addr: fd.raddr, Err: os.NewSyscallError(op, syscall.ETIMEDOUT)}
 	default: // unexpected error, bail
 		return lastError()
 	}
