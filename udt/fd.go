@@ -233,6 +233,18 @@ func (fd *udtFD) SetWriteDeadline(t time.Time) error {
 	return fd.setSockOpt(C.UDT_SNDTIMEO, unsafe.Pointer(&timeout), int(unsafe.Sizeof(timeout)))
 }
 
+func (fd *udtFD) SetLinger(sec int) error {
+	linger := C.struct_linger{}
+	if sec > 0 {
+		linger.l_onoff = 1
+		linger.l_linger = C.int(sec)
+	} else {
+		linger.l_onoff = 0
+		linger.l_linger = 0
+	}
+	return fd.setSockOpt(C.UDT_LINGER, unsafe.Pointer(&linger), int(unsafe.Sizeof(linger)))
+}
+
 // lastError returns the last error as a Go string.
 func lastError() error {
 	return errors.New(C.GoString(C.udt_getlasterror_desc()))
