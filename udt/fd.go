@@ -10,7 +10,7 @@ import (
 )
 
 // #cgo CFLAGS: -Wall
-// #cgo LDFLAGS: libudt.a -lstdc++ -lm
+// #cgo LDFLAGS: -ludt -lstdc++ -lm
 //
 // #include "udt_c.h"
 // #include <errno.h>
@@ -198,16 +198,51 @@ func (fd *udtFD) RemoteAddr() net.Addr {
 	return fd.raddr
 }
 
+func (fd *udtFD) setSockOpt(optname C.SOCKOPT, optval unsafe.Pointer, optlen int) error {
+	n := int(C.udt_setsockopt(fd.sock, 0, optname, optval, (C.int)(optlen)))
+	if n == C.UDT_SUCCESS {
+		return nil
+	}
+	return lastError()
+}
+
+func convertTimeout(t time.Time) int {
+	if t.IsZero() {
+		return -1
+	}
+	return int(t.Sub(time.Now()) / time.Millisecond)
+}
+
 func (fd *udtFD) SetDeadline(t time.Time) error {
-	panic("not yet implemented")
+	timeout := convertTimeout(t)
+	err1 := fd.setSockOpt(C.UDT_RCVTIMEO, unsafe.Pointer(&timeout), int(unsafe.Sizeof(timeout)))
+	err2 := fd.setSockOpt(C.UDT_SNDTIMEO, unsafe.Pointer(&timeout), int(unsafe.Sizeof(timeout)))
+	if err1 != nil {
+		return err1
+	}
+	return err2
 }
 
 func (fd *udtFD) SetReadDeadline(t time.Time) error {
-	panic("not yet implemented")
+	timeout := convertTimeout(t)
+	return fd.setSockOpt(C.UDT_RCVTIMEO, unsafe.Pointer(&timeout), int(unsafe.Sizeof(timeout)))
 }
 
 func (fd *udtFD) SetWriteDeadline(t time.Time) error {
-	panic("not yet implemented")
+	timeout := convertTimeout(t)
+	return fd.setSockOpt(C.UDT_SNDTIMEO, unsafe.Pointer(&timeout), int(unsafe.Sizeof(timeout)))
+}
+
+func (fd *udtFD) SetLinger(sec int) error {
+	linger := C.struct_linger{}
+	if sec > 0 {
+		linger.l_onoff = 1
+		linger.l_linger = C.int(sec)
+	} else {
+		linger.l_onoff = 0
+		linger.l_linger = 0
+	}
+	return fd.setSockOpt(C.UDT_LINGER, unsafe.Pointer(&linger), int(unsafe.Sizeof(linger)))
 }
 
 // lastError returns the last error as a Go string.
@@ -216,7 +251,6 @@ func lastError() error {
 }
 
 func socket(addrfamily int) (sock C.UDTSOCKET, reterr error) {
-
 	sock = C.udt_socket(C.int(addrfamily), C.SOCK_STREAM, 0)
 	if sock == INVALID_SOCK {
 		return INVALID_SOCK, fmt.Errorf("invalid socket: %s", lastError())
@@ -234,7 +268,6 @@ func closeSocket(sock C.UDTSOCKET) error {
 
 // dialFD sets up a udtFD
 func dialFD(laddr, raddr *UDTAddr) (*udtFD, error) {
-
 	if raddr == nil {
 		return nil, &net.OpError{Op: "dial", Net: "udt", Addr: raddr, Err: errors.New("invalid remote address")}
 	}
@@ -271,7 +304,6 @@ func dialFD(laddr, raddr *UDTAddr) (*udtFD, error) {
 
 // listenFD sets up a udtFD
 func listenFD(laddr *UDTAddr) (*udtFD, error) {
-
 	if laddr == nil {
 		return nil, &net.OpError{Op: "dial", Net: "udt", Err: errors.New("invalid address")}
 	}
