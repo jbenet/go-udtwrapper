@@ -8,9 +8,6 @@ import (
 	"unsafe"
 )
 
-// #cgo CFLAGS: -Wall
-// #cgo LDFLAGS: libudt.a -lstdc++
-//
 // #include "udt_c.h"
 // #include <errno.h>
 // #include <arpa/inet.h>
